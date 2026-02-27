@@ -1,0 +1,45 @@
+# === Keys & Secrets ===
+*.pem
+*.pem.pub
+*.key
+.env
+.env.*
+
+# === ns-3 Build Artifacts ===
+5g-factory-sim/ns-3/cmake-cache/
+5g-factory-sim/ns-3/build/
+
+# === ns-3 Trace Output Files ===
+5g-factory-sim/ns-3/*.txt
+!5g-factory-sim/ns-3/CMakeLists.txt
+5g-factory-sim/ns-3/*.pcap
+5g-factory-sim/ns-3/*.tr
+5g-factory-sim/ns-3/*.dat
+5g-factory-sim/ns-3/*.xml
+5g-factory-sim/ns-3/*.flowmon
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+*.egg
+
+# === Node / React ===
+node_modules/
+.next/
+out/
+.cache/
+
+# === OS / IDE ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# === Claude Code ===
+.claude/
