@@ -20,7 +20,7 @@ def test_action_space():
 
     # Check ranges
     assert np.array_equal(RATE_URLLC_VALUES, [5, 10, 15, 20])
-    assert RATE_EMBB_VALUES[0] == 10
+    assert RATE_EMBB_VALUES[0] == 2
     assert RATE_EMBB_VALUES[-1] == 100
     assert len(RATE_EMBB_VALUES) == 19
 
@@ -31,7 +31,7 @@ def test_action_space():
         assert a == a2, f"Roundtrip failed: {a} -> ({u},{e}) -> {a2}"
 
     # Specific values
-    assert decode_action(0) == (5.0, 10.0)
+    assert decode_action(0) == (5.0, 2.0)
     assert decode_action(75) == (20.0, 100.0)
 
     print("Action space: PASS")
@@ -39,17 +39,17 @@ def test_action_space():
 
 def test_action_decode_specific():
     """Test specific action decodings."""
-    # action 0 → (5, 10)
+    # action 0 → (5, 2)
     u, e = decode_action(0)
-    assert u == 5.0 and e == 10.0
+    assert u == 5.0 and e == 2.0
 
     # action 18 → (5, 100)
     u, e = decode_action(18)
     assert u == 5.0 and e == 100.0
 
-    # action 19 → (10, 10)
+    # action 19 → (10, 2)
     u, e = decode_action(19)
-    assert u == 10.0 and e == 10.0
+    assert u == 10.0 and e == 2.0
 
     # action 75 → (20, 100)
     u, e = decode_action(75)

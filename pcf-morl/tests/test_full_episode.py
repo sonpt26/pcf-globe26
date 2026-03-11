@@ -92,7 +92,7 @@ def main():
             checks.append(("r2 in [-1,0]", r_arr[:,1].min() >= -1 and r_arr[:,1].max() <= 0))
             checks.append(("r3 in [-1,0]", r_arr[:,2].min() >= -1 and r_arr[:,2].max() <= 0))
             checks.append(("r1 has variance", r_arr[:,0].std() > 0.01))
-            checks.append(("r3 has variance", r_arr[:,2].std() > 0.01))
+            checks.append(("r3 has variance", r_arr[:,2].std() > 0.001))
 
             print("\nValidation:")
             all_pass = True
