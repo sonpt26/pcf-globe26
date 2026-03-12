@@ -35,17 +35,25 @@ class MorlEvalLogger:
 
         self.eval_weights = equally_spaced_weights(len(ref_point), n=num_eval_weights)
 
-        # CSV for iteration-level MORL metrics
-        self._eval_file = open(self.log_dir / "morl_evals.csv", "w", newline="")
+        # CSV for iteration-level MORL metrics (append if exists)
+        eval_path = self.log_dir / "morl_evals.csv"
+        append = eval_path.exists() and eval_path.stat().st_size > 0
+        self._eval_file = open(eval_path, "a" if append else "w", newline="")
         self._eval_writer = csv.writer(self._eval_file)
-        self._eval_writer.writerow([
-            "iteration", "global_step", "wall_time_s",
-            "HV", "EU", "CCS_size",
-            "mean_return_r1", "mean_return_r2", "mean_return_r3",
-        ])
+        if not append:
+            self._eval_writer.writerow([
+                "iteration", "global_step", "wall_time_s",
+                "HV", "EU", "CCS_size",
+                "mean_return_r1", "mean_return_r2", "mean_return_r3",
+            ])
 
-        # JSON for Pareto front snapshots
-        self._snapshots = []
+        # JSON for Pareto front snapshots (load existing if resuming)
+        snap_path = self.log_dir / "pareto_snapshots.json"
+        if snap_path.exists():
+            with open(snap_path) as f:
+                self._snapshots = json.load(f)
+        else:
+            self._snapshots = []
         self._start_time = time.time()
 
     def log_iteration(self, agent, eval_env, iteration: int, global_step: int):

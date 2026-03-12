@@ -30,37 +30,47 @@ import numpy as np
 class TrainingLogger:
     """Lightweight CSV logger for training monitoring."""
 
+    EPISODE_HEADER = [
+        "episode", "wall_time_s", "steps",
+        "r1_throughput", "r2_delay", "r3_energy",
+        "return_r1", "return_r2", "return_r3",
+        "VR", "TTR", "MVD",
+        "mean_embb_thr_mbps", "mean_urllc_delay_ms", "mean_energy_per_bit",
+    ]
+
+    STEP_HEADER = [
+        "episode", "step", "action", "rate_urllc", "rate_embb",
+        "r1", "r2", "r3",
+        "obs_0", "obs_1", "obs_2", "obs_3", "obs_4", "obs_5",
+        "obs_6", "obs_7", "obs_8", "obs_9", "obs_10", "obs_11",
+        "embb_thr_mbps", "urllc_delay_95_ms", "urllc_vr", "energy_per_bit",
+    ]
+
     def __init__(self, log_dir: str, step_level: bool = False, flush_every: int = 1):
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.step_level = step_level
         self.flush_every = flush_every
 
-        # Episode-level CSV
-        self._ep_file = open(self.log_dir / "episodes.csv", "w", newline="")
+        # Episode-level CSV (append if exists, else create with header)
+        ep_path = self.log_dir / "episodes.csv"
+        append = ep_path.exists() and ep_path.stat().st_size > 0
+        self._ep_file = open(ep_path, "a" if append else "w", newline="")
         self._ep_writer = csv.writer(self._ep_file)
-        self._ep_writer.writerow([
-            "episode", "wall_time_s", "steps",
-            "r1_throughput", "r2_delay", "r3_energy",
-            "return_r1", "return_r2", "return_r3",
-            "VR", "TTR", "MVD",
-            "mean_embb_thr_mbps", "mean_urllc_delay_ms", "mean_energy_per_bit",
-        ])
+        if not append:
+            self._ep_writer.writerow(self.EPISODE_HEADER)
         self._ep_count = 0
 
         # Step-level CSV (optional)
         self._step_file = None
         self._step_writer = None
         if step_level:
-            self._step_file = open(self.log_dir / "steps.csv", "w", newline="")
+            step_path = self.log_dir / "steps.csv"
+            step_append = step_path.exists() and step_path.stat().st_size > 0
+            self._step_file = open(step_path, "a" if step_append else "w", newline="")
             self._step_writer = csv.writer(self._step_file)
-            self._step_writer.writerow([
-                "episode", "step", "action", "rate_urllc", "rate_embb",
-                "r1", "r2", "r3",
-                "obs_0", "obs_1", "obs_2", "obs_3", "obs_4", "obs_5",
-                "obs_6", "obs_7", "obs_8", "obs_9", "obs_10", "obs_11",
-                "embb_thr_mbps", "urllc_delay_95_ms", "urllc_vr", "energy_per_bit",
-            ])
+            if not step_append:
+                self._step_writer.writerow(self.STEP_HEADER)
 
         self._start_time = time.time()
 
