@@ -162,37 +162,46 @@ def fig4_speedup(results: list[dict], output_dir: Path):
     """Fig 4: Parallel scaling speedup plot.
 
     1-column figure, 3.5" × 2.5".
-    X: P (workers). Y: Speedup. Measured + ideal + Amdahl fit.
+    X: P (workers). Y: Speedup. Measured (mean +/- std across seeds) + ideal + Amdahl fit.
     """
     fig, ax = plt.subplots(figsize=(3.5, 2.5))
 
-    # Load scaling data
-    P_vals = []
-    speedups = []
-    t1 = None
+    # Collect per-seed speedups grouped by P
+    from collections import defaultdict
+    p_speedups: dict[int, list[float]] = defaultdict(list)
 
     for r in results:
         P = r.get("num_workers", r.get("P", 1))
-        wall = r.get("total_wall_time_s", r.get("wall_time_s"))
-        if wall is None:
-            continue
-        P_vals.append(P)
-        if P == 1:
-            t1 = wall
-        speedups.append(wall)
+        # Each scaling file may contain per-seed runs
+        runs = r.get("runs", [])
+        if runs:
+            for run in runs:
+                sp = run.get("speedup")
+                if sp is not None:
+                    p_speedups[P].append(sp)
+        else:
+            # Fallback: compute from wall times
+            sp = r.get("speedup")
+            if sp is not None:
+                p_speedups[P].append(sp)
 
-    if t1 is not None and speedups:
-        speedups = [t1 / t for t in speedups]
+    if p_speedups:
+        P_vals = sorted(p_speedups.keys())
+        means = [float(np.mean(p_speedups[P])) for P in P_vals]
+        stds = [float(np.std(p_speedups[P])) for P in P_vals]
     else:
         # Placeholder
         P_vals = [1, 2, 4, 8, 16]
-        speedups = [1, 1.9, 3.5, 6.0, 9.0]
+        means = [1, 1.9, 3.5, 6.0, 9.0]
+        stds = [0, 0.1, 0.2, 0.3, 0.5]
 
-    P_arr = np.array(P_vals)
+    P_arr = np.array(P_vals, dtype=float)
+    means_arr = np.array(means)
+    stds_arr = np.array(stds)
 
-    # Measured
-    ax.plot(P_arr, speedups, "o-", color="#1f77b4", label="Measured", linewidth=1.5,
-            markersize=5)
+    # Measured: single line with error bars (averaged across seeds)
+    ax.errorbar(P_arr, means_arr, yerr=stds_arr, fmt="o-", color="#1f77b4",
+                label="Measured", linewidth=1.5, markersize=5, capsize=3)
 
     # Ideal linear
     ax.plot(P_arr, P_arr, "--", color="#999999", label="Ideal", linewidth=1)

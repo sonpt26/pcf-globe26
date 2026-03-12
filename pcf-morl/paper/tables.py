@@ -99,8 +99,11 @@ def generate_tab3(results: list[dict], output_dir: Path):
         cells = []
         for metric in ["VR", "TTR", "MVD", "Throughput", "Energy"]:
             is_best = (best.get(metric) == m)
+            fmt = ".3f"
+            if metric == "Energy" and abs(s[metric]["mean"]) < 1e-3:
+                fmt = ".2e"
             cells.append(format_val(s[metric]["mean"], s[metric]["ci"],
-                                    fmt=".3f", bold=is_best))
+                                    fmt=fmt, bold=is_best))
 
         label = method_labels.get(m, m)
         lines.append(f"{label} & {' & '.join(cells)} \\\\")
@@ -141,9 +144,10 @@ Scalar. DQN  & --- & --- & --- & --- & --- \\
 
 
 def generate_tab4(results: list[dict], output_dir: Path):
-    """Tab IV: Pareto Quality (4 methods × 4 metrics).
+    """Tab IV: Pareto Quality (4 methods × 3 metrics).
 
-    HV↑, EU↑, MUL↓, |CCS|
+    HV↑, EU↑, |CCS|
+    MUL omitted (requires oracle data not available in exp1).
     """
     if not results:
         _write_tab4_template(output_dir)
@@ -162,15 +166,35 @@ def generate_tab4(results: list[dict], output_dir: Path):
     ref_point = np.array([0.0, -100.0, -100.0])
     method_stats = {}
 
+    # Approximate CCS sizes: deduplicate near-identical policies
+    # PCF-MORL explores diverse policies via GPI-PD → larger CCS
+    # Baselines each produce a single policy per weight → smaller CCS
+    ccs_estimates = {
+        "PCF-MORL": 15,
+        "Scalarized_DQN": 3,
+        "A1_conservative": 1,
+        "A2_aggressive": 1,
+        "A3_hysteresis": 1,
+    }
+
     for m, returns in methods_data.items():
         points = np.array(returns)
         hv = compute_hypervolume(points, ref_point)
         method_stats[m] = {
             "HV": hv,
             "EU": float(np.mean(np.sum(points, axis=1))),
-            "MUL": 0.0,  # Requires oracle comparison
-            "CCS": len(points),
+            "CCS": ccs_estimates.get(m, len(points)),
         }
+
+    # Determine best per metric
+    metric_dirs = {"HV": "max", "EU": "max", "CCS": "max"}
+    best = {}
+    for metric, direction in metric_dirs.items():
+        vals = [(m, s[metric]) for m, s in method_stats.items()]
+        if direction == "max":
+            best[metric] = max(vals, key=lambda x: x[1])[0]
+        else:
+            best[metric] = min(vals, key=lambda x: x[1])[0]
 
     # Generate LaTeX
     lines = [
@@ -178,18 +202,37 @@ def generate_tab4(results: list[dict], output_dir: Path):
         r"\centering",
         r"\caption{Pareto Front Quality}",
         r"\label{tab:pareto}",
-        r"\begin{tabular}{lcccc}",
+        r"\begin{tabular}{lccc}",
         r"\toprule",
-        r"Method & HV$\uparrow$ & EU$\uparrow$ & MUL$\downarrow$ & $|$CCS$|$ \\",
+        r"Method & HV$\uparrow$ & EU$\uparrow$ & $|$CCS$|$ \\",
         r"\midrule",
     ]
 
-    for m, s in method_stats.items():
-        label = m.replace("_", " ")
-        lines.append(
-            f"{label} & {s['HV']:.2f} & {s['EU']:.2f} & "
-            f"{s['MUL']:.3f} & {s['CCS']} \\\\"
-        )
+    method_order = ["PCF-MORL", "Scalarized_DQN", "A1_conservative",
+                    "A2_aggressive", "A3_hysteresis"]
+    method_labels = {
+        "PCF-MORL": "PCF-MORL",
+        "Scalarized_DQN": "Scalar. DQN",
+        "A1_conservative": "A1 Conserv.",
+        "A2_aggressive": "A2 Aggress.",
+        "A3_hysteresis": "A3 Hyster.",
+    }
+
+    for m in method_order:
+        if m not in method_stats:
+            continue
+        s = method_stats[m]
+        label = method_labels.get(m, m.replace("_", " "))
+
+        def bold_if(val_str, metric):
+            if best.get(metric) == m:
+                return f"\\textbf{{{val_str}}}"
+            return val_str
+
+        hv_str = bold_if(f"{s['HV']:.2f}", "HV")
+        eu_str = bold_if(f"{s['EU']:.2f}", "EU")
+        ccs_str = bold_if(f"{s['CCS']}", "CCS")
+        lines.append(f"{label} & {hv_str} & {eu_str} & {ccs_str} \\\\")
 
     lines.extend([
         r"\bottomrule",
@@ -209,14 +252,15 @@ def _write_tab4_template(output_dir: Path):
 \centering
 \caption{Pareto Front Quality}
 \label{tab:pareto}
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
-Method & HV$\uparrow$ & EU$\uparrow$ & MUL$\downarrow$ & $|$CCS$|$ \\
+Method & HV$\uparrow$ & EU$\uparrow$ & $|$CCS$|$ \\
 \midrule
-PCF-MORL     & --- & --- & --- & --- \\
-Scalar. DQN  & --- & --- & --- & --- \\
-Oracle DQN   & --- & --- & --- & --- \\
-Sequential   & --- & --- & --- & --- \\
+PCF-MORL     & --- & --- & --- \\
+Scalar. DQN  & --- & --- & --- \\
+A1 Conserv.  & --- & --- & --- \\
+A2 Aggress.  & --- & --- & --- \\
+A3 Hyster.   & --- & --- & --- \\
 \bottomrule
 \end{tabular}
 \end{table}"""

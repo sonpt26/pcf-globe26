@@ -1,0 +1,82 @@
+{
+  "num_workers": 8,
+  "total_wall_time_s": 35548.972938767656,
+  "speedup": 4.053392722034173,
+  "runs": [
+    {
+      "P": 8,
+      "seed": 42,
+      "wall_time_s": 33936.61289413149,
+      "speedup": 4.243204837478088,
+      "sync_rounds": 6,
+      "merged_weight_counts": [
+        19,
+        19,
+        12,
+        13,
+        17,
+        23
+      ]
+    },
+    {
+      "P": 8,
+      "seed": 142,
+      "wall_time_s": 36569.96905884441,
+      "speedup": 3.9376571461761674,
+      "sync_rounds": 6,
+      "merged_weight_counts": [
+        13,
+        9,
+        23,
+        15,
+        16,
+        24
+      ]
+    },
+    {
+      "P": 8,
+      "seed": 242,
+      "wall_time_s": 36142.60406905476,
+      "speedup": 3.9842176209791305,
+      "sync_rounds": 6,
+      "merged_weight_counts": [
+        24,
+        5,
+        17,
+        18,
+        17,
+        18
+      ]
+    },
+    {
+      "P": 8,
+      "seed": 342,
+      "wall_time_s": 35407.77958379018,
+      "speedup": 4.066902858430687,
+      "sync_rounds": 6,
+      "merged_weight_counts": [
+        7,
+        18,
+        14,
+        20,
+        13,
+        14
+      ]
+    },
+    {
+      "P": 8,
+      "seed": 442,
+      "wall_time_s": 35687.89908801745,
+      "speedup": 4.034981147106789,
+      "sync_rounds": 6,
+      "merged_weight_counts": [
+        22,
+        7,
+        10,
+        11,
+        16,
+        7
+      ]
+    }
+  ]
+}
