@@ -53,7 +53,18 @@ def make_env(seed=0, max_steps=100, logger=None):
 # Checkpoint: save/load full training state (agent + loop state)
 # ---------------------------------------------------------------------------
 
-def save_checkpoint(agent, linear_support, iteration: int, log_dir: Path):
+def _cleanup_old_checkpoints(ckpt_dir: Path, keep: int):
+    """Remove old per-iteration checkpoints, keeping only the most recent `keep`."""
+    if keep <= 0:
+        return
+    iter_files = sorted(ckpt_dir.glob("agent_iter*.tar"))
+    if len(iter_files) > keep:
+        for old in iter_files[:-keep]:
+            old.unlink()
+
+
+def save_checkpoint(agent, linear_support, iteration: int, log_dir: Path,
+                    keep_checkpoints: int = 3):
     """Save full training state for resume."""
     ckpt_dir = log_dir / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -71,6 +82,9 @@ def save_checkpoint(agent, linear_support, iteration: int, log_dir: Path):
         filename="agent_latest",
         save_replay_buffer=True,
     )
+
+    # Prune old per-iteration checkpoints
+    _cleanup_old_checkpoints(ckpt_dir, keep_checkpoints)
 
     # Loop state (iteration, linear support, global_step)
     loop_state = {
@@ -162,6 +176,8 @@ def main():
                         help="Name for log directory (default: auto-generated)")
     parser.add_argument("--resume", type=str, default=None,
                         help="Path to log directory to resume from")
+    parser.add_argument("--keep-checkpoints", type=int, default=3,
+                        help="Number of recent per-iteration checkpoints to keep (0=keep all)")
     args = parser.parse_args()
 
     ref_point = np.array([0.0, -100.0, -100.0])
@@ -321,12 +337,14 @@ def main():
                 morl_logger.log_iteration(agent, eval_env, iteration, agent.global_step)
 
             # Checkpoint every iteration (for resume)
-            save_checkpoint(agent, linear_support, iteration, log_dir)
+            save_checkpoint(agent, linear_support, iteration, log_dir,
+                           keep_checkpoints=args.keep_checkpoints)
 
     except KeyboardInterrupt:
         print(f"\n\nTraining interrupted at iteration {iteration}.")
         print("Saving checkpoint...")
-        save_checkpoint(agent, linear_support, iteration, log_dir)
+        save_checkpoint(agent, linear_support, iteration, log_dir,
+                       keep_checkpoints=args.keep_checkpoints)
         print(f"\nResume with:")
         print(f"  python -m training.train_gpipd --resume {log_dir}")
 
