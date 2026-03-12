@@ -1,0 +1,24 @@
+{
+  "summary": "Pipe vs ZMQ environment IPC comparison",
+  "date": "2026-03-11",
+  "pipe": {
+    "reset_mean_s": 0.076,
+    "reset_values_s": [0.094, 0.062, 0.071],
+    "step_mean_s": 19.642,
+    "note": "Each reset kills + restarts ns-3 process"
+  },
+  "zmq": {
+    "reset_first_s": 0.561,
+    "reset_subsequent_mean_s": 0.041,
+    "reset_values_s": [0.561, 0.033, 0.049],
+    "step_mean_s": 18.441,
+    "note": "Process stays alive across episodes; Simulator::Destroy + rebuild per reset"
+  },
+  "analysis": {
+    "reset_speedup_subsequent": 1.85,
+    "step_latency_ratio": 0.94,
+    "bottleneck": "ns-3 simulation steps (~18-20s each) dominate total time, not IPC or reset",
+    "reset_fraction_of_episode": "< 0.5% (reset ~50ms vs episode ~60s for 3 steps)"
+  },
+  "recommendation": "Use Pipe env for simplicity. Reset overhead is negligible (<0.5% of episode time). ZMQ adds complexity (extra binary, port management, process lifecycle) for minimal speedup. ZMQ becomes beneficial only if step duration is reduced (e.g., shorter stepDuration or faster ns-3 execution)."
+}

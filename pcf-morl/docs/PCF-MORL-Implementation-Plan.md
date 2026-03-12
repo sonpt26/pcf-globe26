@@ -18,10 +18,10 @@ M1 → M2 → M3 → M4 → M5
    - URLLC: UdpClient (periodic 256B/ms) + OnOffApplication (burst)
    - eMBB: UdpClient (25 Mbps CBR) + ThreeGppFtpM2 (32 Mbps mean)
 6. KPI collection: PDCP delay, throughput, PRB utilization, energy
-7. ns3-gym ZMQ interface for Python communication
+7. Custom stdin/stdout JSON pipe interface for Python communication
 
 ### M1.2: Python MO-Gymnasium Wrapper (`env/pcf_morl_env.py`)
-1. Extend ns3-gym for vector reward (3-dim)
+1. Custom IPC with vector reward (3-dim)
 2. Implement action decoding: int → (rate_urllc, rate_embb)
 3. State normalization [0,1]
 4. Episode management: 100 steps × 500ms
@@ -52,7 +52,7 @@ M1 → M2 → M3 → M4 → M5
 ## M3: Parallel Orchestrator (`parallel/`)
 - coordinator.py: CCS + GPI-LS weight selection
 - worker.py: GPI-PD agent + MO-Gym wrapper
-- ns-3 instance management with unique ZMQ ports
+- ns-3 instance management (one subprocess per worker)
 
 ---
 
@@ -75,10 +75,10 @@ M1 → M2 → M3 → M4 → M5
 | Component | Library | Version |
 |-----------|---------|---------|
 | Simulation | ns-3 + 5G-LENA NR | ns-3.46 + NR v4.1.1 |
-| RL bridge | ns3-gym (fork, vector reward) | custom |
+| RL bridge | Custom stdin/stdout JSON pipe | custom |
 | MORL | morl-baselines (GPI-PD) | latest |
 | RL baselines | stable-baselines3 (DQN) | latest |
 | MO metrics | pymoo (HV) | latest |
-| Parallelism | multiprocessing + ZeroMQ | - |
+| Parallelism | multiprocessing | - |
 | Figures | matplotlib + seaborn | - |
 | Stats | scipy.stats | - |

@@ -22,21 +22,27 @@ SCALARIZED_WEIGHTS = [
 
 # Oracle DQN: 20 evenly-spaced test weights on the 3-simplex
 def generate_simplex_weights(n=20, dim=3):
-    """Generate n approximately uniformly distributed weights on the simplex."""
-    weights = []
-    # Use a grid on the 2-simplex
-    step = int(np.ceil(n ** (1.0 / (dim - 1))))
-    for i in range(step + 1):
-        for j in range(step + 1 - i):
-            k = step - i - j
-            w = np.array([i, j, k], dtype=np.float64) / step
-            if np.all(w >= 0.05):  # Ensure minimum weight per objective
-                weights.append(w)
-    # Trim or pad to exactly n
-    if len(weights) > n:
-        indices = np.linspace(0, len(weights) - 1, n, dtype=int)
-        weights = [weights[i] for i in indices]
-    return weights
+    """Generate n approximately uniformly distributed weights on the simplex.
+
+    Uses a finer grid and selects n points with minimum weight constraint.
+    """
+    # Find grid resolution that gives >= n valid points
+    for step in range(4, 50):
+        candidates = []
+        for i in range(step + 1):
+            for j in range(step + 1 - i):
+                k = step - i - j
+                w = np.array([i, j, k], dtype=np.float64) / step
+                if np.all(w >= 0.05):
+                    candidates.append(w)
+        if len(candidates) >= n:
+            break
+
+    # Subsample to exactly n if needed
+    if len(candidates) > n:
+        indices = np.linspace(0, len(candidates) - 1, n, dtype=int)
+        candidates = [candidates[i] for i in indices]
+    return candidates
 
 
 ORACLE_WEIGHTS = generate_simplex_weights(20, 3)
