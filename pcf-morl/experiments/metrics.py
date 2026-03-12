@@ -142,16 +142,23 @@ def compute_zsr(
     returns: np.ndarray, oracle_returns: np.ndarray, weights: np.ndarray,
     threshold: float = 0.9,
 ) -> float:
-    """Zero-Shot Ratio: fraction of test weights where agent ≥ threshold × oracle."""
+    """Zero-Shot Ratio: fraction of test weights where agent >= threshold * oracle quality."""
+    if len(weights) == 0:
+        return 0.0
     count = 0
     for r, o, w in zip(returns, oracle_returns, weights):
         j_agent = np.dot(r, w)
         j_oracle = np.dot(o, w)
-        if j_oracle <= 0:
-            count += 1  # Both negative → consider pass if agent is at least as good
-        elif j_agent >= threshold * j_oracle:
+        if j_oracle > 0:
+            passed = j_agent >= threshold * j_oracle
+        elif j_oracle < 0:
+            # For negative utility: agent loss must not exceed oracle loss / threshold
+            passed = j_agent >= j_oracle / threshold
+        else:
+            passed = j_agent >= 0
+        if passed:
             count += 1
-    return count / len(weights) if len(weights) > 0 else 0.0
+    return count / len(weights)
 
 
 def compute_ttm(

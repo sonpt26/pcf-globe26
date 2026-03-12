@@ -119,6 +119,20 @@ def run_coordinator(
         if msg.msg_type == "error":
             print(f"[Coordinator] Worker {msg.worker_id} ERROR:\n{msg.payload}")
             active_workers.discard(msg.worker_id)
+            # Check if remaining pending_states now satisfy barrier
+            if pending_states and set(pending_states.keys()) >= active_workers and active_workers:
+                sync_round += 1
+                merged = merge_weight_supports(list(pending_states.values()))
+                for wid in active_workers:
+                    from_coord[wid].put(SyncMessage(
+                        worker_id=-1,
+                        msg_type="sf_merge",
+                        payload=merged,
+                    ))
+                merged_weight_count_log.append(len(merged))
+                print(f"[Coordinator] Sync round {sync_round} (after worker failure): "
+                      f"merged |M|={len(merged)} from {len(pending_states)} workers")
+                pending_states.clear()
             continue
 
         if msg.msg_type == "done":
@@ -131,6 +145,20 @@ def run_coordinator(
                 "wall_time_s": elapsed,
             })
             active_workers.discard(msg.worker_id)
+            # Check if remaining pending_states now satisfy barrier
+            if pending_states and set(pending_states.keys()) >= active_workers and active_workers:
+                sync_round += 1
+                merged = merge_weight_supports(list(pending_states.values()))
+                for wid in active_workers:
+                    from_coord[wid].put(SyncMessage(
+                        worker_id=-1,
+                        msg_type="sf_merge",
+                        payload=merged,
+                    ))
+                merged_weight_count_log.append(len(merged))
+                print(f"[Coordinator] Sync round {sync_round} (after worker exit): "
+                      f"merged |M|={len(merged)} from {len(pending_states)} workers")
+                pending_states.clear()
             continue
 
         if msg.msg_type == "sf_update":

@@ -34,7 +34,7 @@ class PcfMorlEnv(gym.Env):
         max_steps: int = 100,
         scenario: str = "training",
         seed: int = 0,
-        e_ref: float = 1.8e-7,
+        e_ref: float = 1.5e-7,
     ):
         super().__init__()
 
@@ -95,7 +95,10 @@ class PcfMorlEnv(gym.Env):
             stderr = self._process.stderr.read()
             raise RuntimeError(f"ns-3 process terminated unexpectedly. stderr: {stderr}")
 
-        return json.loads(resp_line.strip())
+        try:
+            return json.loads(resp_line.strip())
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"Failed to parse ns-3 response: {resp_line!r}\nError: {e}")
 
     def _send_no_response(self, msg: dict):
         """Send without waiting for response."""

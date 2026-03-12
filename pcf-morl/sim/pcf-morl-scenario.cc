@@ -49,7 +49,7 @@ static const double BWP0_BW_HZ = 15e6;
 static const double BWP1_BW_HZ = 25e6;
 static const uint16_t NUMEROLOGY = 1;
 static const double GNB_TX_POWER_DBM = 30.0;
-static const double URLLC_DELAY_BUDGET_S = 5e-3;  // 5ms (realistic for NR μ=1)
+static const double URLLC_DELAY_BUDGET_S = 1e-3;  // 1ms (TS 22.104: factory automation URLLC)
 static const double EMBB_THROUGHPUT_REF_MBPS = 12.0; // per-UE max ~10-12 Mbps on 25MHz BWP
 
 // ============================================================

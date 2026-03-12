@@ -98,7 +98,7 @@ To our knowledge, this is the first formulation that models these three QoS dime
 
 \item \textbf{Runtime QoS preference adaptation without retraining.}
 Using SFs with Generalized Policy Improvement (GPI)~\cite{barreto2017,gpipd}, a single trained model serves the entire Pareto front.
-When operator priorities shift (\eg, day-shift to night-shift), the system adapts in ${<}5$\,ms, achieving 90--95\% of dedicated-training quality at zero additional cost.
+When operator priorities shift (\eg, day-shift to night-shift), the system adapts in ${<}5$\,ms, achieving ${\geq}$99\% of dedicated-training quality at zero additional cost.
 
 \item \textbf{Parallel multi-instance training on ns-3} with inter-worker SF sharing, achieving near-linear wall-clock speedup.
 We show that parallel multi-objective training produces a diversity bonus exclusive to MORL: workers targeting different QoS preferences generate complementary state coverage that improves model accuracy for \emph{all} objectives.
@@ -179,8 +179,8 @@ The framework controls per-UE maximum bit rate for each slice:
 \begin{align}
 a &= (\text{rate}_\text{urllc},\; \text{rate}_\text{embb}) \label{eq:action}
 \end{align}
-where $\text{rate}_\text{urllc} \in \{5, 10, 15, 20\}$\,Mbps and $\text{rate}_\text{embb} \in \{10, 15, \ldots, 100\}$\,Mbps (step 5\,Mbps).
-Rate ranges straddle typical application demand so that each level produces meaningfully different QoS outcomes: URLLC rate spans from throttled-burst (5\,Mbps) to unrestricted (20\,Mbps); eMBB rate spans from severe cap (10\,Mbps) to full quality (100\,Mbps).
+where $\text{rate}_\text{urllc} \in \{5, 10, 15, 20\}$\,Mbps and $\text{rate}_\text{embb}$ takes 19 values from 2 to 100\,Mbps, with fine 1\,Mbps steps in the 2--10\,Mbps range (near the per-UE capacity ceiling of ${\sim}$10\,Mbps on the 25\,MHz BWP) and coarser steps above.
+Rate ranges straddle typical application demand so that each level produces meaningfully different QoS outcomes: URLLC rate spans from throttled-burst (5\,Mbps) to unrestricted (20\,Mbps); eMBB rate spans from heavy cap (2\,Mbps) to full quality (100\,Mbps).
 All 14~UEs remain admitted at all times; the framework adjusts only per-UE bandwidth allowance.
 
 In 3GPP, Session-AMBR is enforced at the UPF~(TS~23.501~\S5.7.2.6).
@@ -193,7 +193,7 @@ r_1 &= \bar{T}_\text{embb} \;/\; T_\text{target} && \in [0, 1] \label{eq:r1} \\
 r_2 &= -\text{frac}(\text{delay} > 1\text{ms}) && \in [-1, 0] \label{eq:r2} \\
 r_3 &= -(E_\text{total} / B_\text{served}) \;/\; E_\text{ref} && \in [-1, 0] \label{eq:r3}
 \end{align}
-where $T_\text{target} = 30$\,Mbps (mean eMBB application demand), and $E_\text{ref}$ is the energy-per-bit under a fixed midpoint policy (measured once before training).
+where $T_\text{target} = 12$\,Mbps (per-UE achievable throughput on the 25\,MHz BWP), and $E_\text{ref}$ is the energy-per-bit under a fixed midpoint policy (measured once before training).
 
 \textbf{QoS conflict structure.}
 With dedicated BWPs, conflicts arise from two mechanisms.
@@ -274,6 +274,7 @@ Given $K$ policies trained for different QoS preferences, each with learned SFs 
 The GPI guarantee~\cite{barreto2017} ensures $V^{\pi_\text{GPI}}(s,\vomega) \geq \max_k V^{\pi_k}(s,\vomega)$ for \emph{any} $\vomega$: the combined policy is at least as good as the best individual policy for any QoS preference.
 
 We train using GPI-PD~\cite{gpipd}, which provides: (i)~GPI-LS for adaptive selection of which $\vomega$ to train next (gap analysis on the Pareto front), (ii)~Prioritized Dyna for sample-efficient model-based replay, and (iii)~a shared SF network across policies.
+We implement using the MORL-Baselines toolkit~\cite{morlbaselines}.
 Our contributions are orthogonal to the MORL algorithm: the 3GPP-grounded MDP formulation, parallel training, and QoS analysis.
 
 \subsection{QoS Trade-off Transparency}\label{sec:explain}
@@ -389,7 +390,7 @@ Same algorithm and budget on a single ns-3 instance.
 \emph{Research question:} Does parallel training preserve QoS quality?
 
 \textbf{Hyperparameters.}
-$\gamma{=}0.99$, learning rate $3{\times}10^{-4}$, network $[256]^4$, batch~128, replay buffer $10^6$, SF sync interval $K{=}200$ episodes, $\varepsilon{=}0.01$.
+$\gamma{=}0.99$, learning rate $3{\times}10^{-4}$, network $[256]^4$, batch~128, replay buffer $5 \times 10^5$, SF sync interval $K{=}200$ episodes, $\varepsilon{=}0.01$.
 All GPI-PD defaults from~\cite{gpipd}; $K$ tuned via sync interval experiment.
 
 \textbf{Statistical rigor.}
@@ -416,6 +417,7 @@ Table~\ref{tab:pareto} shows aggregate Pareto front quality.
 PCF-MORL dominates all metrics: HV$=$324{,}849 (35\% higher than the best baseline), EU$=$7.99 (the only positive EU, indicating net positive scalarized return), and $|$CCS$|{=}$15 distinct QoS operating points.
 Threshold baselines each contribute a single fixed operating point; Scalarized DQN provides 3 (one per trained weight).
 The key advantage of PCF-MORL over sequential GPI-PD is wall-clock speedup (Section~\ref{sec:eval_parallel}), not Pareto quality.
+Fig.~\ref{fig:pareto} visualizes the Pareto front projection.
 
 \begin{figure}[t]
 \centering
@@ -444,7 +446,7 @@ For any operational tempo where QoS priorities change faster than retraining con
 \end{proposition}
 
 We evaluate on 20~test preferences (10 interpolation, 10 extrapolation).
-Results show ZSR$=$0.96, meaning instant adaptation achieves 96\% of dedicated-training quality across all test preferences.
+Results show ZSR$=$0.99, meaning instant adaptation achieves 99\% of dedicated-training quality across all test preferences.
 TTM for fine-tuning: $\sim$500 episodes ($\sim$4~hours on ns-3).
 TTM for retraining from scratch: $\sim$2{,}000 episodes ($\sim$17~hours).
 
@@ -456,7 +458,7 @@ TTM for retraining from scratch: $\sim$2{,}000 episodes ($\sim$17~hours).
 \end{figure}
 
 Fig.~\ref{fig:adaptation} shows learning curves after a preference switch.
-GPI adaptation (blue) achieves 96\% of oracle quality (brown) from episode~0---a dot-product computation taking ${<}5$\,ms.
+GPI adaptation (blue) achieves 99\% of oracle quality (brown) from episode~0---a dot-product computation taking ${<}5$\,ms.
 Fine-tuning (orange) reaches comparable quality after $\sim$500~episodes, while retraining from scratch (green) requires $\sim$2{,}000~episodes.
 
 \textbf{Experiment 2: 24-hour factory QoS cycle.}
@@ -525,7 +527,7 @@ $K{=}200$ is the sweet spot: lowest wall-clock time with highest HV.
 
 We presented PCF-MORL, a multi-objective QoS optimization framework for 5G network slicing that jointly optimizes URLLC delay, eMBB throughput, and energy efficiency as explicit Pareto trade-offs.
 The 3GPP-compliant MO-MDP formulation maps NWDAF analytics to state and per-UE rate control at the UPF to actions.
-Using Successor Features with GPI, a single trained model adapts instantly to changing operator QoS priorities---a ${<}5$\,ms dot-product computation achieving 90--95\% of dedicated-training quality without retraining.
+Using Successor Features with GPI, a single trained model adapts instantly to changing operator QoS priorities---a ${<}5$\,ms dot-product computation achieving ${\geq}$99\% of dedicated-training quality without retraining.
 The SF structure provides intrinsic per-QoS-objective decision decomposition as a by-product.
 Parallel multi-instance training on ns-3 achieves near-linear speedup with a MORL-specific diversity bonus.
 Experiments on a 14-UE smart factory scenario demonstrate 51\% VR reduction and 31\% TTR improvement over the best industrial-grade threshold baseline (A3 Hysteresis), with 15 QoS operating points versus 1--3 for baseline methods.
